@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SIGNAL/27 Event Microsite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Figtree:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: one cobalt poster that scrolls. A live signal line is the only loud element;
+   everything else is a quiet timetable set in mono, like a printed festival schedule. */
+:root {
+  color-scheme: dark;
+  --field: #1b2fd1;      /* cobalt poster ground */
+  --deep: #111c8f;       /* panels and inputs */
+  --ink: #f4f1e8;        /* paper white type */
+  --muted: #b9c0f5;      /* secondary type */
+  --signal: #ffd23f;     /* the accent: signal yellow */
+  --coral: #ff9478;      /* third track only */
+  --line: rgba(244, 241, 232, .28);
+  --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --body: "Figtree", "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--field); color: var(--ink);
+  font-family: var(--body); font-size: 17px; line-height: 1.55;
+}
+a { color: inherit; }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+.mono { font-family: var(--mono); font-size: 13px; letter-spacing: .04em; text-transform: uppercase; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: .92; text-transform: uppercase; }
+h2 { font-size: clamp(40px, 7vw, 76px); font-weight: 800; }
+p { margin: 0; max-width: 62ch; }
+:focus-visible { outline: 3px solid var(--signal); outline-offset: 3px; }
+
+/* top bar */
+.bar { display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.bar nav { display: flex; gap: 18px; flex-wrap: wrap; }
+.bar a { text-decoration: none; }
+.bar a:hover { color: var(--signal); }
+
+/* hero */
+.hero { padding: 36px 0 0; }
+.hero h1 { font-size: clamp(52px, 18vw, 260px); white-space: nowrap; font-weight: 900; letter-spacing: -.01em; }
+.hero h1 span { color: var(--signal); }
+.tag { font-family: var(--display); font-weight: 600; font-size: clamp(24px, 4vw, 40px); text-transform: uppercase; line-height: 1; margin-top: 6px; }
+#wave { display: block; width: 100%; height: 150px; margin: 14px 0 6px; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.facts div { padding: 16px 16px 16px 0; }
+.facts b { display: block; font-family: var(--display); font-size: 30px; font-weight: 800; text-transform: uppercase; line-height: 1.05; }
+.count { display: flex; gap: 22px; flex-wrap: wrap; align-items: flex-end; padding: 22px 0 8px; }
+.count .n { font-family: var(--display); font-weight: 900; font-size: clamp(48px, 9vw, 92px); line-height: .9; font-variant-numeric: tabular-nums; color: var(--signal); }
+.count .u { display: block; }
+.lede { font-size: 19px; padding: 14px 0 0; }
+.cta { display: flex; gap: 12px; flex-wrap: wrap; padding: 22px 0 44px; }
+.btn {
+  font-family: var(--mono); font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  padding: 14px 20px; border: 2px solid var(--ink); background: transparent; color: var(--ink);
+  cursor: pointer; text-decoration: none; display: inline-block;
+}
+.btn.primary { background: var(--signal); border-color: var(--signal); color: #0d145e; }
+.btn:hover { transform: translate(-2px, -2px); box-shadow: 4px 4px 0 var(--ink); }
+.btn.primary:hover { box-shadow: 4px 4px 0 #0d145e; }
+
+section { padding: 56px 0; border-top: 1px solid var(--line); }
+.head { display: flex; flex-direction: column; gap: 12px; margin-bottom: 26px; }
+
+/* planner */
+.planner { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font-family: var(--mono); font-size: 13px; text-transform: uppercase; letter-spacing: .04em;
+  padding: 10px 14px; border: 1.5px solid var(--ink); background: transparent; color: var(--ink); cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--field); font-weight: 700; }
+.chip[aria-pressed="true"]::before { content: "+ "; }
+.group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; }
+.myday { background: var(--deep); padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.myday h3 { font-size: 30px; font-weight: 800; }
+.pick { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.pick .t { font-family: var(--mono); font-size: 14px; font-variant-numeric: tabular-nums; color: var(--signal); }
+.pick b { display: block; line-height: 1.3; }
+.pick small { color: var(--muted); font-size: 14px; }
+.empty { color: var(--muted); }
+
+/* agenda */
+.filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.slot { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 16px; padding: 18px 0; border-top: 1px solid var(--line); }
+.slot > .time { font-family: var(--display); font-weight: 800; font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
+.sessions { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.sess { border: 1.5px solid var(--line); padding: 14px; display: flex; flex-direction: column; gap: 8px; position: relative; }
+.sess h3 { font-family: var(--body); text-transform: none; font-size: 18px; font-weight: 700; line-height: 1.25; }
+.sess .who { color: var(--muted); font-size: 14.5px; }
+.track { display: inline-flex; align-items: center; gap: 7px; }
+.track i { width: 10px; height: 10px; background: var(--c); display: inline-block; }
+.t-build { --c: var(--signal); } .t-ship { --c: var(--ink); } .t-grow { --c: var(--coral); } .t-all { --c: transparent; }
+.t-ship i { border-radius: 50%; } .t-grow i { transform: rotate(45deg); } .t-all i { border: 1.5px solid var(--ink); }
+.sess.rec { border-color: var(--signal); background: var(--deep); }
+.sess.rec::after { content: "Your pick"; position: absolute; top: -11px; right: 10px; background: var(--signal); color: #0d145e; font-family: var(--mono); font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 2px 8px; }
+.sess[hidden] { display: none; }
+
+/* badge maker */
+.badge { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); gap: 28px; align-items: start; }
+label { display: flex; flex-direction: column; gap: 6px; }
+input[type="text"], select {
+  font: inherit; color: var(--ink); background: var(--deep); border: 1.5px solid var(--line); padding: 13px 14px; border-radius: 0; width: 100%;
+}
+.form { display: flex; flex-direction: column; gap: 16px; }
+#badgeImg { width: 100%; height: auto; display: block; border: 1.5px solid var(--line); }
+.caption { background: var(--deep); padding: 14px; font-size: 15.5px; }
+.note { color: var(--muted); font-size: 14.5px; }
+.status { min-height: 1.4em; color: var(--signal); }
+
+footer { border-top: 1px solid var(--line); padding: 26px 0 50px; color: var(--muted); font-size: 14.5px; display: flex; flex-direction: column; gap: 6px; }
+
+@media (max-width: 760px) {
+  .planner, .badge { grid-template-columns: minmax(0, 1fr); }
+  .slot { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  #wave { height: 110px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .btn:hover { transform: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar mono">
+    <span>Concept event microsite</span>
+    <nav aria-label="Sections">
+      <a href="#plan">Plan my day</a>
+      <a href="#agenda">Agenda</a>
+      <a href="#badge">Make my badge</a>
+    </nav>
+  </div>
+
+  <header class="hero">
+    <p class="mono">Applied AI Day &middot; Ho Chi Minh City</p>
+    <h1>Signal<span>/27</span></h1>
+    <p class="tag">Less noise. More shipped AI.</p>
+    <canvas id="wave" aria-hidden="true"></canvas>
+    <div class="facts">
+      <div><span class="mono">When</span><b>Sat 16 Jan 2027</b>09:00 to 17:00 ICT</div>
+      <div><span class="mono">Where</span><b>District 1, HCMC</b>One floor, three rooms</div>
+      <div><span class="mono">What</span><b>14 sessions</b>Build, Ship and Grow tracks</div>
+    </div>
+    <div class="count" aria-label="Time until doors open">
+      <div><span class="n" id="cd-d">00</span><span class="mono u">Days</span></div>
+      <div><span class="n" id="cd-h">00</span><span class="mono u">Hours</span></div>
+      <div><span class="n" id="cd-m">00</span><span class="mono u">Minutes</span></div>
+      <div><span class="n" id="cd-s">00</span><span class="mono u">Seconds</span></div>
+    </div>
+    <p class="lede">One day for people who put AI into real products: engineers who run agents in production, analysts who write the requirements, and marketers who ship the campaign.</p>
+    <div class="cta">
+      <a class="btn primary" href="#plan">Plan my day</a>
+      <a class="btn" href="#badge">Make my badge</a>
+    </div>
+  </header>
+
+  <section id="plan">
+    <div class="head">
+      <p class="mono">Step 1</p>
+      <h2>Plan my day</h2>
+      <p>Three rooms run at once, so you can only see a third of the programme. Tell us what you work on and we pick one session for each time slot.</p>
+    </div>
+    <div class="planner">
+      <div>
+        <div class="group">
+          <span class="mono" id="role-l">I work as</span>
+          <div class="chips" id="roles" role="group" aria-labelledby="role-l"></div>
+        </div>
+        <div class="group">
+          <span class="mono" id="int-l">I want to hear about</span>
+          <div class="chips" id="interests" role="group" aria-labelledby="int-l"></div>
+        </div>
+        <button class="btn" id="reset" type="button">Clear my choices</button>
+      </div>
+      <div class="myday" aria-live="polite">
+        <h3>Your day</h3>
+        <div id="picks"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="agenda">
+    <div class="head">
+      <p class="mono">Step 2</p>
+      <h2>Full agenda</h2>
+      <p>Your picks are outlined in yellow. Filter by track to see one room at a time.</p>
+    </div>
+    <div class="filters" id="filters" role="group" aria-label="Filter by track"></div>
+    <div id="slots"></div>
+  </section>
+
+  <section id="badge">
+    <div class="head">
+      <p class="mono">Step 3</p>
+      <h2>Make my badge</h2>
+      <p>Tell your network you are coming. The card updates as you type.</p>
+    </div>
+    <div class="badge">
+      <div class="form">
+        <label for="b-name"><span class="mono">Your name</span>
+          <input type="text" id="b-name" maxlength="28" value="Vy Le" autocomplete="name">
+        </label>
+        <label for="b-role"><span class="mono">Your role</span>
+          <select id="b-role"></select>
+        </label>
+        <div class="caption" id="caption"></div>
+        <div class="cta" style="padding:0">
+          <button class="btn primary" id="copy" type="button">Copy caption</button>
+        </div>
+        <p class="status mono" id="status" role="status"></p>
+        <p class="note">To save the card, press and hold the image (or right-click it) and choose Save image.</p>
+      </div>
+      <img id="badgeImg" alt="Shareable card that says you are going to SIGNAL/27" width="1080" height="1080">
+    </div>
+  </section>
+
+  <footer>
+    <span>Concept project by Vy Le. SIGNAL/27 is a fictional event made to show event marketing and AI-assisted product building.</span>
+    <span>Built with Claude. No data leaves this page.</span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var EVENT = new Date("2027-01-16T09:00:00+07:00");
+  var ROLES = [
+    { id: "ba", label: "Business analyst / PM", tags: ["requirements", "product", "prototyping"] },
+    { id: "dev", label: "Developer", tags: ["agents", "llm", "evaluation"] },
+    { id: "mkt", label: "Marketer", tags: ["content", "video", "analytics"] },
+    { id: "founder", label: "Founder", tags: ["strategy", "product", "agents"] }
+  ];
+  var INTERESTS = [
+    { id: "agents", label: "AI agents" }, { id: "llm", label: "LLMs" },
+    { id: "requirements", label: "Requirements" }, { id: "prototyping", label: "Prototyping" },
+    { id: "content", label: "Video and content" }, { id: "analytics", label: "Data and analytics" },
+    { id: "strategy", label: "Strategy" }
+  ];
+  var TRACKS = { all: "All rooms", build: "Build", ship: "Ship", grow: "Grow" };
+  var S = [
+    ["09:00", "all", "Keynote: what one year of AI agents changed", "Head of engineering, logistics platform", ["agents", "strategy"]],
+    ["09:45", "build", "Agents that finish the job: tool use in production", "Staff engineer, e-commerce marketplace", ["agents", "llm"]],
+    ["09:45", "ship", "Writing requirements for features that think", "Lead business analyst, banking software team", ["requirements", "product"]],
+    ["09:45", "grow", "One brief, forty assets: generative video for small teams", "Creative lead, consumer brand studio", ["video", "content"]],
+    ["10:45", "build", "Evaluating LLM output without fooling yourself", "Data scientist, health-tech startup", ["llm", "evaluation", "analytics"]],
+    ["10:45", "ship", "From prompt to prototype in one afternoon", "Product designer, travel app", ["prototyping", "product"]],
+    ["10:45", "grow", "What Threads posts reveal about Vietnamese micro-businesses", "Researcher, information management", ["content", "analytics"]],
+    ["13:30", "build", "Fine-tuning small Vietnamese language models", "ML engineer, edtech company", ["llm", "evaluation"]],
+    ["13:30", "ship", "The analyst's new toolkit: research, specs and test cases with AI", "Senior business analyst, outsourcing firm", ["requirements", "prototyping"]],
+    ["13:30", "grow", "Campaign analytics when half your content is generated", "Growth manager, food delivery brand", ["analytics", "content"]],
+    ["14:30", "build", "Vibe coding, honestly: what holds up after the demo", "Engineering manager, SaaS scale-up", ["prototyping", "agents"]],
+    ["14:30", "ship", "Pricing and positioning an AI feature", "Product manager, fintech startup", ["product", "strategy"]],
+    ["14:30", "grow", "Brand voice at scale: guardrails for generated copy", "Content director, retail group", ["content", "llm", "video"]],
+    ["15:30", "all", "Closing panel: hiring for AI-native teams", "Four leads from the day's sessions", ["strategy", "product"]]
+  ].map(function (r, i) { return { id: i, time: r[0], track: r[1], title: r[2], who: r[3], tags: r[4] }; });
+
+  var saved = (window.claude && window.claude.hot && window.claude.hot.data) || null;
+  if (!saved) { try { saved = JSON.parse(localStorage.getItem("signal27") || "null"); } catch (e) { saved = null; } }
+  var state = { role: "ba", interests: ["requirements", "prototyping"], track: "all", name: "Vy Le" };
+  if (saved && typeof saved === "object") {
+    ["role", "track", "name"].forEach(function (k) { if (typeof saved[k] === "string") state[k] = saved[k]; });
+    if (Array.isArray(saved.interests)) state.interests = saved.interests;
+  }
+  function persist() { try { localStorage.setItem("signal27", JSON.stringify(state)); } catch (e) {} }
+  if (window.claude && window.claude.hot && window.claude.hot.snapshot) window.claude.hot.snapshot(function () { return state; });
+
+  var $ = function (id) { return document.getElementById(id); };
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+  function roleOf(id) { return ROLES.filter(function (r) { return r.id === id; })[0] || null; }
+
+  /* ---- countdown ---- */
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function tick() {
+    var ms = Math.max(0, EVENT - new Date()), s = Math.floor(ms / 1000);
+    $("cd-d").textContent = pad(Math.floor(s / 86400));
+    $("cd-h").textContent = pad(Math.floor(s % 86400 / 3600));
+    $("cd-m").textContent = pad(Math.floor(s % 3600 / 60));
+    $("cd-s").textContent = pad(s % 60);
+  }
+  tick(); setInterval(tick, 1000);
+
+  /* ---- recommendation: one best session per time slot ---- */
+  function score(sess) {
+    var want = state.interests.slice(), r = roleOf(state.role), n = 0;
+    sess.tags.forEach(function (t) {
+      if (want.indexOf(t) > -1) n += 2;
+      if (r && r.tags.indexOf(t) > -1) n += 1;
+    });
+    return n;
+  }
+  function picks() {
+    var bySlot = {}, out = [];
+    S.forEach(function (s) { (bySlot[s.time] = bySlot[s.time] || []).push(s); });
+    Object.keys(bySlot).sort().forEach(function (t) {
+      var best = null, bestScore = -1;
+      bySlot[t].forEach(function (s) { var sc = score(s); if (sc > bestScore) { best = s; bestScore = sc; } });
+      if (bySlot[t].length === 1 || bestScore > 0) out.push(best);
+    });
+    return out;
+  }
+
+  /* ---- render ---- */
+  function chip(label, pressed, onClick) {
+    var b = el("button", "chip", label); b.type = "button";
+    b.setAttribute("aria-pressed", pressed ? "true" : "false");
+    b.addEventListener("click", onClick); return b;
+  }
+  function trackLabel(t) { var s = el("span", "mono track t-" + t); s.appendChild(el("i")); s.appendChild(document.createTextNode(TRACKS[t])); return s; }
+
+  function render() {
+    var roles = $("roles"), ints = $("interests"), f = $("filters");
+    roles.textContent = ""; ints.textContent = ""; f.textContent = "";
+    ROLES.forEach(function (r) {
+      roles.appendChild(chip(r.label, state.role === r.id, function () { state.role = state.role === r.id ? "" : r.id; update(); }));
+    });
+    INTERESTS.forEach(function (it) {
+      var on = state.interests.indexOf(it.id) > -1;
+      ints.appendChild(chip(it.label, on, function () {
+        state.interests = on ? state.interests.filter(function (x) { return x !== it.id; }) : state.interests.concat(it.id);
+        update();
+      }));
+    });
+    Object.keys(TRACKS).forEach(function (t) {
+      f.appendChild(chip(TRACKS[t], state.track === t, function () { state.track = t; update(); }));
+    });
+
+    var chosen = picks(), ids = chosen.map(function (s) { return s.id; });
+    var box = $("picks"); box.textContent = "";
+    var hasInput = state.role || state.interests.length;
+    if (!hasInput) {
+      box.appendChild(el("p", "empty", "Choose a role or a topic and your schedule appears here."));
+    } else {
+      chosen.forEach(function (s) {
+        var row = el("div", "pick");
+        row.appendChild(el("span", "t", s.time));
+        var d = el("div"); d.appendChild(el("b", "", s.title));
+        d.appendChild(el("small", "", TRACKS[s.track] + " room")); row.appendChild(d);
+        box.appendChild(row);
+      });
+    }
+
+    var slots = $("slots"); slots.textContent = "";
+    var times = [];
+    S.forEach(function (s) { if (times.indexOf(s.time) < 0) times.push(s.time); });
+    times.forEach(function (t) {
+      var list = S.filter(function (s) { return s.time === t && (state.track === "all" || s.track === state.track || s.track === "all"); });
+      if (!list.length) return;
+      var slot = el("div", "slot"); slot.appendChild(el("div", "time", t));
+      var grid = el("div", "sessions");
+      list.forEach(function (s) {
+        var c = el("article", "sess" + (hasInput && ids.indexOf(s.id) > -1 ? " rec" : ""));
+        c.appendChild(trackLabel(s.track)); c.appendChild(el("h3", "", s.title)); c.appendChild(el("span", "who", s.who));
+        grid.appendChild(c);
+      });
+      slot.appendChild(grid); slots.appendChild(slot);
+    });
+  }
+
+  /* ---- badge ---- */
+  var badge = document.createElement("canvas"); badge.width = 1080; badge.height = 1080;
+  function captionText() {
+    return "I'm going to SIGNAL/27, the applied AI day in Ho Chi Minh City on 16 January 2027. " +
+      "Looking forward to the sessions on " + topicPhrase() + ". Who else is coming? #SIGNAL27 #AppliedAI";
+  }
+  function topicPhrase() {
+    var names = INTERESTS.filter(function (i) { return state.interests.indexOf(i.id) > -1; }).map(function (i) { return i.label; });
+    if (!names.length) return "putting AI into real products";
+    if (names.length === 1) return names[0];
+    names = names.slice(0, 3);
+    return names.slice(0, -1).join(", ") + " and " + names[names.length - 1];
+  }
+  function drawBadge() {
+    var c = badge.getContext("2d"), W = 1080, name = ($("b-name").value || "Your name").trim() || "Your name";
+    var role = $("b-role").options[$("b-role").selectedIndex].text;
+    c.fillStyle = "#1b2fd1"; c.fillRect(0, 0, W, W);
+    c.strokeStyle = "#ffd23f"; c.lineWidth = 7; c.lineJoin = "round"; c.beginPath();
+    for (var x = 0; x <= W; x += 6) {
+      var env = Math.exp(-Math.pow((x - 600) / 230, 2));
+      var y = 640 + Math.sin(x / 26) * 14 + Math.sin(x / 9) * 120 * env;
+      if (x === 0) c.moveTo(x, y); else c.lineTo(x, y);
+    }
+    c.stroke();
+    c.fillStyle = "#f4f1e8"; c.textBaseline = "alphabetic";
+    c.font = "700 30px 'JetBrains Mono', monospace"; c.fillText("I'M GOING TO", 70, 120);
+    c.font = "900 250px 'Big Shoulders Display', Impact, sans-serif"; c.fillText("SIGNAL", 62, 350);
+    var w = c.measureText("SIGNAL").width; c.fillStyle = "#ffd23f"; c.fillText("/27", 62 + w, 350);
+    c.fillStyle = "#f4f1e8"; c.font = "600 52px 'Big Shoulders Display', Impact, sans-serif";
+    c.fillText("APPLIED AI DAY  ·  HO CHI MINH CITY", 70, 425);
+    var size = 120; c.font = "800 " + size + "px 'Big Shoulders Display', Impact, sans-serif";
+    while (c.measureText(name.toUpperCase()).width > W - 140 && size > 50) { size -= 6; c.font = "800 " + size + "px 'Big Shoulders Display', Impact, sans-serif"; }
+    c.fillText(name.toUpperCase(), 70, 900);
+    c.font = "400 34px 'JetBrains Mono', monospace"; c.fillStyle = "#b9c0f5"; c.fillText(role.toUpperCase(), 70, 955);
+    c.fillStyle = "#ffd23f"; c.fillRect(70, 990, 940, 4);
+    c.fillStyle = "#f4f1e8"; c.font = "700 30px 'JetBrains Mono', monospace"; c.fillText("SAT 16 JAN 2027", 70, 1040);
+    c.textAlign = "right"; c.fillText("#SIGNAL27", 1010, 1040); c.textAlign = "left";
+    try { $("badgeImg").src = badge.toDataURL("image/png"); } catch (e) {}
+    $("caption").textContent = captionText();
+  }
+
+  function update() { persist(); render(); drawBadge(); }
+
+  ROLES.forEach(function (r) { var o = el("option", "", r.label); o.value = r.id; $("b-role").appendChild(o); });
+  $("b-role").value = state.role || "ba";
+  $("b-name").value = state.name;
+  $("b-name").addEventListener("input", function () { state.name = this.value; persist(); drawBadge(); });
+  $("b-role").addEventListener("change", drawBadge);
+  $("reset").addEventListener("click", function () { state.role = ""; state.interests = []; state.track = "all"; update(); });
+  $("copy").addEventListener("click", function () {
+    var st = $("status"), txt = captionText();
+    function ok() { st.textContent = "Caption copied."; }
+    function fail() { st.textContent = "Copy was blocked. Select the caption text and copy it by hand."; }
+    try { navigator.clipboard.writeText(txt).then(ok, fail); } catch (e) { fail(); }
+  });
+
+  render(); drawBadge();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawBadge);
+
+  /* ---- hero signal line: calm noise that resolves into one clear pulse under the pointer ---- */
+  var cv = $("wave"), g = cv.getContext("2d"), focus = .62, target = .62, t0 = 0;
+  var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function size() { var d = window.devicePixelRatio || 1; cv.width = cv.clientWidth * d; cv.height = cv.clientHeight * d; g.setTransform(d, 0, 0, d, 0, 0); }
+  function draw(ts) {
+    var W = cv.clientWidth, H = cv.clientHeight, t = still ? 0 : (ts || 0) / 1000;
+    focus += (target - focus) * .08;
+    g.clearRect(0, 0, W, H);
+    g.strokeStyle = "rgba(244,241,232,.28)"; g.lineWidth = 1; g.beginPath(); g.moveTo(0, H / 2); g.lineTo(W, H / 2); g.stroke();
+    g.strokeStyle = "#ffd23f"; g.lineWidth = 3; g.lineJoin = "round"; g.beginPath();
+    for (var x = 0; x <= W; x += 3) {
+      var u = x / W, env = Math.exp(-Math.pow((u - focus) / .11, 2));
+      var noise = (Math.sin(x / 7 + t * 3) + Math.sin(x / 3.1 - t * 5) * .6) * H * .05 * (1 - env);
+      var y = H / 2 + noise + Math.sin(x / 11 - t * 6) * H * .42 * env;
+      if (x === 0) g.moveTo(x, y); else g.lineTo(x, y);
+    }
+    g.stroke();
+    if (!still) requestAnimationFrame(draw);
+  }
+  size(); draw(0);
+  window.addEventListener("resize", function () { size(); if (still) draw(0); });
+  document.querySelector(".hero").addEventListener("pointermove", function (e) {
+    var r = cv.getBoundingClientRect(); target = Math.min(.95, Math.max(.05, (e.clientX - r.left) / r.width));
+    if (still) draw(0);
+  });
+})();
+</script>
+</body>
+</html>
